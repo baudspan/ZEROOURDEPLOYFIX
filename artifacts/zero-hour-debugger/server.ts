@@ -1,6 +1,4 @@
 import fs from "fs";
-
-
 import express, { type Request, type Response } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -39,6 +37,9 @@ const __dirname = path.dirname(__filename);
 const PORT = Number(process.env.PORT || 3000);
 const HOST = "0.0.0.0";
 const EVENT_DURATION_SECONDS = 15 * 60; // 15 minutes
+
+// FIX #3: Moved to top-level scope so buildParticipantDashboard can access it.
+const UNIVERSAL_ACCESS_CODE = "zero-hour-2026";
 
 // 5 Debugging Challenges
 interface Challenge {
@@ -860,7 +861,7 @@ async function createApp() {
     res.json(ranked);
   });
 
-  const UNIVERSAL_ACCESS_CODE = "zero-hour-2026";
+  // FIX #3: Removed local declaration; UNIVERSAL_ACCESS_CODE is now top-level.
   const ORGANIZER_KEY = process.env.ORGANIZER_KEY || "organizer-2026";
 
   // Organizer Authentication Verification endpoint
@@ -923,7 +924,8 @@ async function createApp() {
     let team = teamsMap.get(normId);
     if (!team && dbPool) {
       try {
-        const queryRes = await pool.query(
+        // FIX #2: Use dbPool instead of undefined `pool`.
+        const queryRes = await dbPool.query(
           "SELECT * FROM teams WHERE UPPER(team_id) = $1 OR UPPER(teamid) = $1 LIMIT 1",
           [normId]
         );
@@ -1549,7 +1551,8 @@ async function createApp() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.resolve(__dirname, "dist/public")));
-    app.get("*", (_req, res) => {
+    // FIX #1: Express 5 requires named wildcard. `/{*splat}` matches all paths including `/`.
+    app.get("/{*splat}", (_req, res) => {
       res.sendFile(path.resolve(__dirname, "dist/public/index.html"));
     });
   }
